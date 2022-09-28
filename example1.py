@@ -111,7 +111,7 @@ imshow_patch(patch_9, grid=(3,3), rang='global', ignoreZeroStd=True)
 
 # Can we "temporarily" change an argurment saved during the initialization?
 # To investigate this, we will use imshow_shot to display patches.
-# Then, we will show it as is, but change the aspect arguement set to 1
+# Then, we will show it as is, but change the aspect argument set to 1
 imshow_shot(patches, title=patches_titles, grid=(2,2), rang='norm')
 imshow_shot(patches, title=patches_titles, grid=(2,2), rang='norm', aspect=1)
 
@@ -120,11 +120,11 @@ imshow_shot(patches, title=patches_titles, grid=(2,2), rang='norm', aspect=1)
 # =============================================================================
 '''
 Now, you have seen the essentials of this function. As such, I will list all 
-the arguements that can be used below. You can play with the different 
-arguements here if you find any of them to be interesting. Though, keep the 
+the arguments that can be used below. You can play with the different 
+arguments here if you find any of them to be interesting. Though, keep the 
 following bugs in mind:
 Known Bugs:
-- `plotsize` arguement might be inconsistent depending on the aspect ratio of the images.
+- `plotsize` argument might be inconsistent depending on the aspect ratio of the images.
 - `cbar_ticks` sometimes does not _obey_ orders and decides to use its own number of ticks.
 - `alphabet` only works when the images are shown in a single row.
 - The colorbar uses the range and colormap of the last plot.

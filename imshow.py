@@ -17,22 +17,22 @@ most of the capabilities provided here.
 - Works with 4D arrays (it uses the first sample for convenience)
 - Automatically moves the channel axis position to the last axis
 - Sets the DPI to 300 by default (configurable)
-- Adds a colorbar to the right (can be toggled on or off from the arguements)
+- Adds a colorbar to the right (can be toggled on or off from the arguments)
 - Accepts multiple images and shows them on a specified grid (e.g. 2x2 vs 1x4)
 - Titles can be assigned to multiple images (optional)
 - All images are shown in a unified range. Range of the last image is used 
-  by default (configurable via the rang arguement)
+  by default (configurable via the rang argument)
 - Can Automatically clips the minimum and maximum 1 percentile of the image 
   (very useful for seismic images)
 - Padding between the images is configurable (default = 0.7)
 - The figure can be set to be transparent (hope that I spelled that right)
-- Other plt.imshow arguments can be passed as named arguements **kwargs.
+- Other plt.imshow arguments can be passed as named arguments **kwargs.
   For example, assume we want to change the aspect ratio of the shown
   image. This can be modified by using the "aspect" argument in plt.imshow.
   We could pass this to our function by kwargs as:
       kwargs = {"aspect": 1/3}
-  Where the key is the name of the arguement and the value is... its value (surprise!).
-  Or, you could simply add aspect=1/3 in the arguements of this function 
+  Where the key is the name of the argument and the value is... its value (surprise!).
+  Or, you could simply add aspect=1/3 in the arguments of this function 
   without the use of a dictionary. I guess the explanation here is pretty
   convoluted ):
   
@@ -52,7 +52,7 @@ but you don't need the image in the middle of the figure for some reason,
 then it can be deleted by feeding the location of the middle image with a 
 constant number (or an image with zero standard deviation). The function will 
 recognize the uselessness of the image and will discard it from the image grid 
-IF THE ARGUEMENT `ignoreZeroStd=True`.
+IF THE ARGUMENT `ignoreZeroStd=True`.
 Again, this is too convoluted, so I will simply stop trying to explain :)
 
 @author: ruwwad
@@ -70,8 +70,9 @@ def imshow(I,
            grid           = (1,1), 
            colorbar       = True, 
            cbar_ticks     = 11, 
+           cbar_label     = None,
            aspect         = 1, 
-           cmap           = 'gray', 
+           cmap           = 'seismic_r', 
            pad            = 0.7, 
            plotsize       = (5,5), 
            rang           = 'global', 
@@ -96,6 +97,8 @@ def imshow(I,
         Specifies whether to add a colorbar or not. The default is True.
     cbar_ticks : TYPE = int, optional
         Controls the number of ticks in the color bar (this is a bit buggy)
+    cbar_label : TYPE = str, optional
+        Adds a label to the colorbar
     aspect : TYPE = float, optional
         Sets the aspect ratio of the plots. The default is 1.
     cmap : TYPE: str, optional
@@ -104,19 +107,19 @@ def imshow(I,
         Adjusts the padding between subplots. The default is 0.7.
     plotsize : TYPE = tuple, list, or array with shape=(2,)
         Adjusts the SUBPLOT size (seems to be buggy). The default is (5,5).
-    rang : TYPE = tuple=(vmin,vmax), or int (index of arguement I), optional
+    rang : TYPE = tuple=(vmin,vmax), or int (index of argument I), optional
         When the type is a tuple, list, or an array with shape (2,), then the
         range of the color map will be rang[0] to rang[1].
         When the type is an integer, then the normalization will be performed 
         based on the range of I[rang]. 
         Note: the range will still be clipped (removing the lowest and highest 1%)
-        By default, the range=-1 (last image in arguement I) is used for the
+        By default, the range=-1 (last image in argument I) is used for the
         color map. Quite useful for comparing multiple image.
     rangZeroCenter : TYPE bool, optional
         If true, the center of the range will be zero. Useful when finding
         the difference between two images. 
         Note that if rang has an explicit vmin and vmax, then it will override 
-        this arguement (setting it to False).
+        this argument (setting it to False).
         The default is False.
     dpi : TYPE = int, optional
         Sets the dpi of the figure. The default is 300.
@@ -133,9 +136,9 @@ def imshow(I,
         Clips the minimum and maximum x% of the data (based on the frequency 
         histogram). The default is 0 (no clip:).
     **kwargs : TYPE = who knows :)?
-        Named arguements to be passed to plt.imshow. It can be passed either as
-        individual named arguements or as a dictionary containing multiple
-        named arguements.
+        Named arguments to be passed to plt.imshow. It can be passed either as
+        individual named arguments or as a dictionary containing multiple
+        named arguments.
         
 
     Returns
@@ -455,6 +458,8 @@ As such, the global minimum and maximum values will be used'''
         with mpl.rc_context({'mpl_toolkits.legacy_colorbar': False}):
             cbar = ax.cax.colorbar(show)
             cbar.ax.locator_params(nbins=cbar_ticks)
+            if cbar_label != None:
+                cbar.ax.set_ylabel(cbar_label) #, rotation=270)
         
         #The below method seems more "official"
         # ax.cax.colorbar(show)
