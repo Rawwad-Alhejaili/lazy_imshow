@@ -1,6 +1,4 @@
 # lazy_imshow
-This repo features a rather convenient imshow function.
-
 I am sure that I speak for everyone when I say that although `matplotlib.pyplot.imshow` brings amazing functionality to python, its defaults leave a LOT to be desired. For example:
 
 - The default DPI is so LOW which causes the output image to have terrible quality.
