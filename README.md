@@ -9,7 +9,7 @@ I am sure that I speak for everyone when I say that although `matplotlib.pyplot.
 - Showing images in subplots takes too much space in the code.
 - Good luck showing a 4D tensor that resides on the GPU (tensors in general cause a heap of problems).
 
-I could go on, but I guess you get the point now. Having to fix all this every single time I use `plt.imshow` gets REALLY annoying very quickly (remember that `matplotlib.pyplot.imshow` is still an amazing fucntion all things considered). As such, I decided to write what I would call a "convenience function", and it is `imshow`. I decided to write this function to cut down on the tedium. Below I will write a summary that includes most of the capabilities provided here.
+I could go on, but I guess you get the point now. Having to fix all this every single time I use `plt.imshow` gets REALLY annoying very quickly (remember that `matplotlib.pyplot.imshow` is still an amazing fucntion all things considered). As such, I decided to write what I would call a "convenience function", and it is `imshow`. I decided to write this function to cut down on the tedium. Below I will write a summary that includes most of its capabilities here.
 
 # Features:
 - Accepts multiple images and shows them on a specified grid (e.g. 2x2 vs 1x4).
