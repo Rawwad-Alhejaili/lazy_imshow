@@ -6,9 +6,9 @@ Created on Sat Sep 10 21:45:47 2022
 This is simply a wrapper for imshow.py. The goal behind it is to store
 your defaults only once. For example, I need to constantly show a grid of 2x2
 with no color bar, and also have to show a grid of 1x4 that DO include a color
-bar. Instead of having to change the arguements for each case, I can now define 
+bar. Instead of having to change the arguments for each case, I can now define 
 2 imshow instances with different defaults so I don't have to constantly change 
-the arguements back and forth (which can still be temporarily overwritten even 
+the arguments back and forth (which can still be temporarily overwritten even 
 after setting the new defaults).
 
 @author: Someone lazy :)
@@ -76,7 +76,7 @@ class lazy_imshow():
              clip           = None,
              **kwargs):
         
-        # If the arguements are not changed, use the defaults from __init__
+        # If the arguments are not changed, use the defaults from __init__
         if I is None:
             I     = deepcopy(self.I)
         if title          == None:
@@ -132,9 +132,9 @@ class lazy_imshow():
              clip,
              **kwargs)
         # Note:
-        # When calling imshowSeismic2, I could have used "named" arguements to
+        # When calling imshowSeismic2, I could have used "named" arguments to
         # to avoid errors in the future (if I update the locations of 
-        # imshowSeismic2's arguements, then errors will be raised). However, I
+        # imshowSeismic2's arguments, then errors will be raised). However, I
         # have intentionally did it this way to catch errors early on.
 
 # # =============================================================================
