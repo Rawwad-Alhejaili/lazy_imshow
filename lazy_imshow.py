@@ -15,7 +15,7 @@ after setting the new defaults).
 """
 
 from copy import deepcopy  #to copy the image regardless of whether its numpy or tensor
-from imshow import imshow
+from imshow2 import imshow2
 
 class lazy_imshow():
     def __init__(self, 
@@ -24,6 +24,7 @@ class lazy_imshow():
                  grid           = (1,1), 
                  colorbar       = True, 
                  cbar_ticks     = 11, 
+                 cbar_label     = None,
                  aspect         = 1,
                  cmap           = 'seismic_r', 
                  pad            = 0.7, 
@@ -43,6 +44,7 @@ class lazy_imshow():
         self.grid           = grid
         self.colorbar       = colorbar
         self.cbar_ticks     = cbar_ticks
+        self.cbar_label     = cbar_label
         self.aspect         = aspect
         self.cmap           = cmap
         self.pad            = pad
@@ -62,6 +64,7 @@ class lazy_imshow():
              grid           = None, 
              colorbar       = None, 
              cbar_ticks     = None, 
+             cbar_label     = None,
              aspect         = None,
              cmap           = None, 
              pad            = None, 
@@ -87,6 +90,8 @@ class lazy_imshow():
             colorbar       = self.colorbar
         if cbar_ticks     == None:
             cbar_ticks     = self.cbar_ticks
+        if cbar_label     == None:
+            cbar_label     = self.cbar_label
         if aspect         == None:
             aspect         = self.aspect
         if cmap           == None:
@@ -113,11 +118,12 @@ class lazy_imshow():
             clip           = self.clip
         
         # Show the image
-        imshow(I,
+        imshow2(I,
              title,
              grid,
              colorbar,
              cbar_ticks,
+             cbar_label,
              aspect,
              cmap,
              pad,
@@ -131,6 +137,7 @@ class lazy_imshow():
              ignoreZeroStd,
              clip,
              **kwargs)
+        
         # Note:
         # When calling imshowSeismic2, I could have used "named" arguments to
         # to avoid errors in the future (if I update the locations of 

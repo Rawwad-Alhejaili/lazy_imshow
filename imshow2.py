@@ -59,31 +59,32 @@ Again, this is too convoluted, so I will simply stop trying to explain :)
 """
 
 import numpy as np
+import torch
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 # from matplotlib import ticker
 from mpl_toolkits.axes_grid1 import ImageGrid
 import warnings
 
-def imshow(I, 
-           title          = None, 
-           grid           = (1,1), 
-           colorbar       = True, 
-           cbar_ticks     = 11, 
-           cbar_label     = None,
-           aspect         = 1, 
-           cmap           = 'seismic_r', 
-           pad            = 0.7, 
-           plotsize       = (5,5), 
-           rang           = 'global', 
-           rangZeroCenter = False, 
-           dpi            = 300, 
-           figTransparent = False, 
-           fontsize       = 14, 
-           alphabet       = False, 
-           ignoreZeroStd  = False, 
-           clip           = 0, 
-           **kwargs):
+def imshow2(I, 
+            title          = None, 
+            grid           = (1,1), 
+            colorbar       = True, 
+            cbar_ticks     = 11, 
+            cbar_label     = None,
+            aspect         = 1, 
+            cmap           = 'seismic_r', 
+            pad            = 0.7, 
+            plotsize       = (5,5), 
+            rang           = 'global', 
+            rangZeroCenter = False, 
+            dpi            = 300, 
+            figTransparent = False, 
+            fontsize       = 14, 
+            alphabet       = False, 
+            ignoreZeroStd  = False, 
+            clip           = 0, 
+            **kwargs):
     '''
     Parameters
     ----------
@@ -233,17 +234,20 @@ add a constant number there (or an image with zero standard deviation)\n'''
     # oppotunity for optimization, even if its impact will rarely be seen
     for i, Im in enumerate(I):
         # Convert the image to a numpy array (in case it was a tensor)
-        try:  #Assume the image is on the CPU and has no gradients (tensor)
-            Im = np.array(Im, dtype=float)  #To make sure the image is of type float
-        except:  #If this failed, then move the image to the cpu and detach the gradients
-            try:
-                Im = np.array(Im.cpu().detach(), dtype=float)  #To make sure the image is of type float
-            except:
-                error = \
+        try:
+            if torch.is_tensor(Im):
+                Im = Im.detach().float()
+                if Im.is_cuda:
+                    Im = Im.cpu()
+                Im = Im.numpy()
+            else:
+                Im = Im.astype(np.float)
+        except:
+            error = \
 f'''The image at index={i} CANNOT be converted to a numpy array.
 As such, it will be skipped'''
-                warnings.warn(error, UserWarning)
-                continue  #Skip to the next image
+            warnings.warn(error, UserWarning)
+            continue  #Skip to the next image
         
         if clip != 0:
             # The below clips the range (VERY useful for seismic images)
