@@ -61,10 +61,20 @@ Again, this is too convoluted, so I will simply stop trying to explain :)
 import numpy as np
 import torch
 import matplotlib as mpl
+# mpl.interactive(False)  # MIGHT prevent memory leak in jupyter and Spyder IDE (IT DID NOT!)
 import matplotlib.pyplot as plt
 # from matplotlib import ticker
 from mpl_toolkits.axes_grid1 import ImageGrid
 import warnings
+import torch.fft as fft
+from scipy.fft import fft2, fftshift
+# fft2tor = lambda x, k: 20*torch.log10(torch.finfo(x.dtype).eps+torch.abs(fft.fftshift(fft.fft2(x, (x.shape[-2]*k, x.shape[-1]*k)), (-2,-1)))).cpu().detach()
+fft2tor = lambda x, k: torch.finfo(x.dtype).eps \
+                     + torch.abs(fft.fftshift(fft.fft2(x, (x.shape[-2]*k, x.shape[-1]*k)), (-2,-1))).cpu().detach()
+fft2np  = lambda x, k: np.finfo(x.dtype).eps \
+                     + np.abs(fftshift(fft2(x, (x.shape[-2]*k, x.shape[-1]*k)), (-2,-1)))
+decibal = lambda x: 20*np.log10(x)
+normIm  = lambda Im,L,H: (H-L) * (Im-Im.min()) / (Im.max() - Im.min()) + L
 
 def imshow2(I, 
             title          = None, 
@@ -73,7 +83,7 @@ def imshow2(I,
             cbar_ticks     = 11, 
             cbar_label     = None,
             aspect         = 1, 
-            cmap           = 'seismic_r', 
+            cmap           = None, 
             pad            = 0.7, 
             plotsize       = (5,5), 
             rang           = 'global', 
@@ -84,6 +94,12 @@ def imshow2(I,
             alphabet       = False, 
             ignoreZeroStd  = False, 
             clip           = 0, 
+            t              = None,
+            offset         = None,
+            fft            = False,
+            fft_factor     = 3,
+            dB             = None,
+            transform      = None,
             **kwargs):
     '''
     Parameters
@@ -144,19 +160,41 @@ def imshow2(I,
 
     Returns
     -------
-    Nothing, but it displays the image (or images).
+    Displays the image (or images)
 
     '''
     
-    # normIm = lambda Im,L,H: (Im-Im.min()) / (Im.max()-Im.min()) * (H-L)+L
-    
+# =============================================================================
+# Fixing issues that could arise from unexpected input types
+# =============================================================================
     # Check if the input is a list, and fix it if it wasn't
     if type(I) != type([]):
         I = [I]  #Fixes the below for loops
+    
+    if fft:
+        try:
+            I = [fft2tor(Im, fft_factor) for Im in I]
+        except:
+            I = [fft2np(Im, fft_factor) for Im in I]
+        if dB is None:
+            I = [decibal(Im) for Im in I]
+    
+    if dB:
+        I = [decibal(Im) for Im in I]
+        
+    if transform is None:
+        transform = [lambda x: x for i in range(len(I))]
+        
+    elif type(transform) != type([]):
+        transform = [transform for i in range(len(I))]
+    
+    I = [transform[i](Im) for i, Im in enumerate(I)]
+    
     if title is None:  #To avoid errors (didn't troubleshoot it yet)
         title = ['' for i in range(len(I))]
     elif type(title) != type([]):  #if title was not a list
         title = [title]  #Fixes the below for loops
+    
     if len(title) < len(I):
         for i in range(len(I) - len(title)):
             title.append('')
@@ -164,6 +202,7 @@ def imshow2(I,
 '''The number of titles is less than the number of images!
 To avoid errors, empty titles were added to the other images'''
         warnings.warn(error, UserWarning)
+    
     # Check if the grid is too small to fit the input images
     if len(I) > grid[0]*grid[1]:
         error = \
@@ -178,7 +217,75 @@ add a constant number there (or an image with zero standard deviation)\n'''
         warnings.warn(error, UserWarning)
     elif len(I) == 1:
         grid = (1,1)  #if the user entered a single image, then use this grid
+    
+    if t is None or offset is None:
+        # print(0)
+        disable_Axes = True
+        offset = [np.linspace(0,1,I[idx].shape[-1]) for idx in range(len(I))]
+        t      = [np.linspace(0,I[idx].shape[-2]/I[idx].shape[-1],I[idx].shape[-2]) for idx in range(len(I))]
+    elif type(t) != type([]): 
+        # print(1)
+        disable_Axes = False
+        t      = [t.reshape(-1).astype(float)      for i in range(len(I))]
+        offset = [offset.reshape(-1).astype(float) for i in range(len(I))]
+    else:
+        # print(2)
+        disable_Axes = True
         
+    if fft:
+        t = [np.linspace(-0.5, 0.5, Im.shape[-2])/(tim[1]-tim[0]) for Im, tim in zip(I,t)]
+        offset = [np.linspace(-0.5, 0.5, Im.shape[-1])/(off[1]-off[0]) for Im, off in zip(I,offset)]
+        # print(t[0].shape)
+        # print(offset[0].shape)
+    # print(t)
+    # print('\n\n\n')
+    # offset = [offset for i in range(len(I))]
+    # if (t is None and not any(t)) and (offset is None and not any(offset)):
+    #     disable_Axes = True
+    #     t = [np.linspace(0,1,I[idx].shape[-2]) for idx in range(len(I))]
+    #     offset = [np.linspace(0,1,I[idx].shape[-1]) for idx in range(len(I))]
+    # else:
+    #     disable_Axes = False
+    #     # print('False')
+    # # Check if `t` is a list
+    # if type(t) != type([]):
+    #     t = [t]  #Fixes the below for loops
+    
+    # # Check if `offset` is a list
+    # if type(offset) != type([]):
+    #     offset = [offset]  #Fixes the below for loops
+        
+    # ---------------------------------------------------------------------
+    # Fix both the `t` and `offset` axes
+    # ---------------------------------------------------------------------
+    for idx in range(len(I)):
+        # # Make sure both arguments are one-dimensional
+        # try:
+        #     t[idx] = t[idx].astype('float').reshape(-1)
+        # except:
+        #     t[idx] = np.arange(I[idx].shape[-2])
+        # try:
+        #     offset[idx] = offset[idx].astype('float').reshape(-1)
+        # except:
+        #     offset[idx] = np.arange(I[idx].shape[-1])
+        
+        # If the size of the arguments don't align with the image, 
+        # then fix them
+        if t[idx].shape[0] != I[idx].shape[-2]:
+            error = \
+f'''The time axis at index={idx} is not of the exact same size as the 
+corresponding image. Therefore, np.arange will be used to avoid errors.'''
+            warnings.warn(error, UserWarning)
+            t[idx] = np.arange(I[idx].shape[-2])
+        if offset[idx].shape[0] != I[idx].shape[-1]:
+            error = \
+f'''The offset axis at index={idx} is not of the exact same size as the 
+corresponding image. Therefore, np.arange will be used to avoid errors.'''
+            warnings.warn(error, UserWarning)
+            offset[idx] = np.arange(I[idx].shape[-1])
+# =============================================================================
+# Create the image grid
+# =============================================================================
     # Create a figure which scales in size with respect to the grid size.
     # This makes the text size to the "plot" size stay consistent.
     fig = plt.figure(dpi=dpi, 
@@ -211,15 +318,15 @@ add a constant number there (or an image with zero standard deviation)\n'''
     else:
         grid = ImageGrid(fig, 111,
                      nrows_ncols=(grid[0],grid[1]),
-                     axes_pad=pad,
-                     share_all=True)
+                     share_all=True,
+                     axes_pad=pad)
     
     if figTransparent:
         fig.patch.set_visible(False)
         
-    # =========================================================================
-    # Set the range
-    # =========================================================================
+# =============================================================================
+# Set the range
+# =============================================================================
     
     # Preallocation
     n = len(I)
@@ -241,7 +348,7 @@ add a constant number there (or an image with zero standard deviation)\n'''
                     Im = Im.cpu()
                 Im = Im.numpy()
             else:
-                Im = Im.astype(np.float)
+                Im = Im.astype('float')
         except:
             error = \
 f'''The image at index={i} CANNOT be converted to a numpy array.
@@ -271,8 +378,10 @@ As such, it will be skipped'''
             # delta = max(maxv[i] - u, u - minv[i])
             # maxv[i] = u + delta
             # minv[i] = u - delta
-    
+        
+    # -------------------------------------------------------------------------
     # Now set the range of ALL images for real :)
+    # -------------------------------------------------------------------------
     if type(rang) == type(-1):
         # If the range was provided as an index, then use the range of I[index]
         # for all images
@@ -350,11 +459,20 @@ As such, the global minimum and maximum values will be used'''
     # of the alphabet, or better yet, forgotten the existence of some letters,
     # so please do not judge XD
     if alphabet:
-        alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
-        xlabels = ['(' + character + ')' for character in alphabet]
+        characters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+        xlabels = ['(' + character + ')' for character in characters]
         alphabet = True
     else:
         xlabels = ['' for i in range(100)]
+    
+    if cmap is None:
+        if fft:
+            # print('cmap =', cmap) 
+            cmap = 'viridis'
+        else:
+            cmap = 'seismic_r'
+        # t = [np.linspace(-0.5, 0.5, len(tim)*fft_factor)/(tim[1]-tim[0]) for tim in t]
+        # offset = [np.linspace(-0.5, 0.5, len(off)*fft_factor)/(off[1]-off[0]) for off in offset]
     
     for ax in grid:
         idx += 1
@@ -372,16 +490,28 @@ As such, the global minimum and maximum values will be used'''
         if Im.std() == 0.00 and ignoreZeroStd:
             fig.delaxes(ax)
             continue  #Skip to the next image
+        # plt.subplot(grid[0],grid[1], subplot[i])
         if alphabet:
-            ax.set_xlabel(xlabels[idx], fontsize=fontsize)  #Buggy. Does not show the labels sometimes
+            ax.set_xlabel(xlabels[idx], fontsize=fontsize-2)  #Buggy. Does not show the labels sometimes
             # print('Printing the alphabetical order of the subplots...')
-        else:
+        if disable_Axes and not(alphabet):
             ax.axis('off')
-        ax.tick_params(left=False,bottom=False)
-        ax.set_xticks([])
-        ax.set_yticks([])
-        
-        ax.set_title(title[idx], fontsize=14)
+            ax.tick_params(left=False,bottom=False)
+            ax.set_xticks([])
+            ax.set_yticks([])
+        elif not(disable_Axes) and not(alphabet):
+            if fft:
+                ax.set_xlabel(f'Wavenumber (1/m)\n{xlabels[idx]}', fontsize=fontsize)
+                ax.set_ylabel('Frequency (Hz)', fontsize=fontsize)
+            else:
+                # ax.set_xlabel(f'Offset (km)\n{xlabels[idx]}', fontsize=fontsize)
+                ax.set_xlabel(f'Trace\n{xlabels[idx]}', fontsize=fontsize)
+                ax.set_ylabel('Time (s)', fontsize=fontsize)
+        else:
+            ax.tick_params(left=False,bottom=False)
+            ax.set_xticks([])
+            ax.set_yticks([])    
+        ax.set_title(title[idx], fontsize=fontsize)
         # try:
         #     plt.title(title[i])
         # except:
@@ -405,8 +535,24 @@ As such, the global minimum and maximum values will be used'''
                 # Use the first sample to convert it to a 3D array, and then
                 # move the channel axis to the last dimension
                 Im = np.moveaxis(Im[0],0,-1)  
+        
+        # The below block is used for the extent
+        t_min = t[idx].min().item()
+        t_max = t[idx].max().item()
+        offset_min = offset[idx].min().item()
+        offset_max = offset[idx].max().item()
+        if disable_Axes:
+            square_Axes = 1
+        else:
+            # print(t)
+            square_Axes = np.ptp(offset[idx]).item() / np.ptp(t[idx]).item()
+        # print(f'Disable axes is {disable_Axes}')
         if len(Im.shape) == 2 or (len(Im.shape) == 3 and Im.shape[2] == 1): #If the image was grayscale,
-            show = ax.imshow(Im, cmap=cmap, vmin=minv[idx], vmax=maxv[idx], aspect=aspect, **kwargs)
+            
+            show = ax.imshow(Im, cmap=cmap, vmin=minv[idx], vmax=maxv[idx], 
+                             aspect=aspect*square_Axes, 
+                             extent=[offset_min, offset_max, t_max, t_min],
+                             **kwargs)
             # if L == 256 and (minimum >= 0):
             #     plt.imshow(np.uint8(Im), cmap=cmap, vmin=0, vmax=255)
             # elif L==1 and (minimum >= 0):
@@ -416,7 +562,10 @@ As such, the global minimum and maximum values will be used'''
                 # print("The image does NOT have a standard range... \nNormalizing...")
         elif len(Im.shape) == 3:
             if Im.shape[-1] == 1: #If the image was grayscale,
-                show = ax.imshow(Im, cmap=cmap, vmin=minv[idx], vmax=maxv[idx], aspect=aspect, **kwargs)
+                show = ax.imshow(Im, cmap=cmap, vmin=minv[idx], vmax=maxv[idx], 
+                                 aspect=aspect*square_Axes, 
+                                 extent=[offset_min, offset_max, t_max, t_min],
+                                 **kwargs)
                 # if L == 256 and (minimum >= 0):
                 #     plt.imshow(np.uint8(Im), cmap=cmap, vmin=0, vmax=255)
                 # elif L==1 and (minimum >= 0):
@@ -426,7 +575,11 @@ As such, the global minimum and maximum values will be used'''
                 #     plt.imshow(normIm(Im, 0, 255), cmap=cmap, vmin=0, vmax=255)
             elif Im.shape[-1] == 3: #If the image was RGB,
                 # print(f'vmin={Im.min()}, vmax={Im.max()}')
-                show = ax.imshow(Im, vmin=minv[idx], vmax=maxv[idx], aspect=aspect, **kwargs)
+                Im = normIm(Im, minv[idx]/255, maxv[idx]/255)  #imshow ignores vmin/vmax for RGB images
+                show = ax.imshow(Im, vmin=minv[idx], vmax=maxv[idx], 
+                                 aspect=aspect*square_Axes, 
+                                 # extent=[offset_min, offset_max, t_max, t_min],
+                                 **kwargs)
                 # if L == 256 and (minimum >= 0):
                 #     plt.imshow(np.uint8(Im), vmin=0, vmax=255)
                 # elif L==1 and (minimum >= 0):
@@ -436,7 +589,10 @@ As such, the global minimum and maximum values will be used'''
                 #     plt.imshow(normIm(Im, 0, 255), vmin=0, vmax=255)
             else:
                 # Show only the first channel
-                show = ax.imshow(Im[:,:,0], cmap=cmap, vmin=minv[idx], vmax=maxv[idx], aspect=aspect, **kwargs)
+                show = ax.imshow(Im[:,:,0], cmap=cmap, vmin=minv[idx], vmax=maxv[idx], 
+                                 aspect=aspect*square_Axes, 
+                                 extent=[offset_min, offset_max, t_max, t_min],
+                                 **kwargs)
         else:
             print("Something isn't right with the dimensions of the image, so fix it!")
             #The above line is problematic
@@ -463,14 +619,20 @@ As such, the global minimum and maximum values will be used'''
         
         # Temporarily change the rcParam to solve deprecation warning
         with mpl.rc_context({'mpl_toolkits.legacy_colorbar': False}):
+            # consider cbar = fig.colorbar('something here')
             cbar = ax.cax.colorbar(show)
             cbar.ax.locator_params(nbins=cbar_ticks)
-            cbar.ax.tick_params(labelsize=fontsize)
             if cbar_label != None:
-                cbar.ax.set_ylabel(cbar_label) #, rotation=270)
+                cbar.ax.set_ylabel(cbar_label, fontsize=fontsize) #, rotation=270)
         
         #The below method seems more "official"
         # ax.cax.colorbar(show)
         # ax.cax.toggle_label(True)
     # fig.tight_layout(pad=5)
-    return fig, grid
+
+
+'''
+Links that might prove to be useful in the future:
+    - ImageGrid with varying extents fails to maintain padding (https://github.com/matplotlib/matplotlib/issues/8695)
+    - Foregoing the use of ImageGrid https://stackoverflow.com/questions/66292311/how-to-change-the-height-of-each-image-grid-with-mpl-toolkits-axes-grid1-imagegr
+'''

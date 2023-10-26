@@ -15,7 +15,7 @@ after setting the new defaults).
 """
 
 from copy import deepcopy  #to copy the image regardless of whether its numpy or tensor
-from imshow2 import imshow2
+from imshow2_offset import imshow2
 
 class lazy_imshow():
     def __init__(self, 
@@ -37,6 +37,9 @@ class lazy_imshow():
                  alphabet       = False,
                  ignoreZeroStd  = False,  
                  clip           = 0,
+                 t              = None,
+                 offset         = None,
+                 fft            = False,
                  **kwargs):
         #Store the defaults in self
         self.I              = I
@@ -57,6 +60,9 @@ class lazy_imshow():
         self.alphabet       = alphabet
         self.ignoreZeroStd  = ignoreZeroStd
         self.clip           = clip
+        self.t              = t
+        self.offset         = offset
+        self.fft            = fft
         
     def imshow(self, 
              I              = None,
@@ -77,12 +83,15 @@ class lazy_imshow():
              alphabet       = None, 
              ignoreZeroStd  = None, 
              clip           = None,
+             t              = None,
+             offset         = None,
+             fft            = None,
              **kwargs):
         
         # If the arguments are not changed, use the defaults from __init__
         if I is None:
             I     = deepcopy(self.I)
-        if title          == None:
+        if title          is None:
             title = deepcopy(self.title)
         if grid           == None:
             grid           = self.grid
@@ -116,8 +125,15 @@ class lazy_imshow():
             ignoreZeroStd  = self.ignoreZeroStd
         if clip           == None:
             clip           = self.clip
+        if t              is None:
+            t              = self.t
+        if offset         is None:
+            offset         = self.offset
+        if fft            == None:
+            fft            = self.fft
         
         # Show the image
+        return \
         imshow2(I,
              title,
              grid,
@@ -136,6 +152,9 @@ class lazy_imshow():
              alphabet,
              ignoreZeroStd,
              clip,
+             t,
+             offset,
+             fft,
              **kwargs)
         
         # Note:
@@ -145,7 +164,7 @@ class lazy_imshow():
         # have intentionally did it this way to catch errors early on.
 
 # # =============================================================================
-# # Initialization Example
+# # Initialization Example (Outdated)
 # # =============================================================================
 # lazy = lazy_imshow(I              = None, 
 #                    title          = '', 
