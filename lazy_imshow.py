@@ -30,6 +30,7 @@ class lazy_imshow():
                  pad            = 0.7, 
                  plotsize       = (7,7), 
                  rang           = 'global', 
+                 AGC            = False,
                  rangZeroCenter = False, 
                  dpi            = 300, 
                  figTransparent = False, 
@@ -53,6 +54,7 @@ class lazy_imshow():
         self.pad            = pad
         self.plotsize       = plotsize
         self.rang           = rang
+        self.AGC            = AGC
         self.rangZeroCenter = rangZeroCenter
         self.dpi            = dpi
         self.figTransparent = figTransparent
@@ -76,6 +78,7 @@ class lazy_imshow():
              pad            = None, 
              plotsize       = None, 
              rang           = None, 
+             AGC            = None,
              rangZeroCenter = None, 
              dpi            = None, 
              figTransparent = None, 
@@ -111,6 +114,8 @@ class lazy_imshow():
             plotsize       = self.plotsize
         if rang           == None:
             rang           = self.rang
+        if AGC            == None:
+            AGC            = self.AGC
         if rangZeroCenter == None:
             rangZeroCenter = self.rangZeroCenter
         if dpi            == None:
@@ -145,6 +150,7 @@ class lazy_imshow():
              pad,
              plotsize,
              rang,
+             AGC,
              rangZeroCenter,
              dpi,
              figTransparent,
