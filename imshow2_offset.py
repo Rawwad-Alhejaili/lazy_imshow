@@ -68,7 +68,11 @@ from mpl_toolkits.axes_grid1 import ImageGrid
 import warnings
 import torch.fft as fft
 from scipy.fft import fft2, fftshift
-from AGC_np import AGC_np  # optional: can perform auto gain correction
+try:
+    from AGC_np import AGC_np  # optional: can perform auto gain correction
+    AGC_import = True
+except ImportError:
+    AGC_import = False
 tr = torch
 # fft2tor = lambda x, k: 20*torch.log10(torch.finfo(x.dtype).eps+torch.abs(fft.fftshift(fft.fft2(x, (x.shape[-2]*k, x.shape[-1]*k)), (-2,-1)))).cpu().detach()
 fft2tor = lambda x, k: tr.finfo(x.dtype).eps+tr.abs(fft.fftshift(fft.fft2(x, (x.shape[-2]*k, x.shape[-1]*k)), (-2,-1))).cpu().detach()
@@ -86,7 +90,7 @@ def GC4imshow(Images):
 def imshow2(I, 
             title          = None, 
             grid           = (1,1), 
-            colorbar       = True, 
+            colorbar       = False, 
             cbar_ticks     = 11, 
             cbar_label     = None,
             aspect         = 1, 
@@ -205,6 +209,11 @@ def imshow2(I,
             I[i] = np.array(Im, dtype=float) #To make sure the image is of type float
         except:
             I[i] = np.array(Im.cpu().detach().numpy(), dtype=float)
+    
+    if AGC is True and not AGC_import:
+        print('WARNING! AGC WAS NOT IMPORTED!')
+        print('AGC will be forced to False')
+        AGC = False
     
     if AGC is not False:
         if type(rang) == type(1):
@@ -543,6 +552,10 @@ As such, the global minimum and maximum values will be used'''
                 ax.set_xlabel(f'Trace Number\n{xlabels[idx]}', fontsize=fontsize)
                 ax.set_ylabel('Time (s)', fontsize=fontsize)
         ax.set_title(title[idx], fontsize=fontsize)
+        
+        if aspect is None:
+            aspect = Im.shape[-2] / Im.shape[-1]
+        
         # try:
         #     plt.title(title[i])
         # except:
@@ -605,8 +618,12 @@ As such, the global minimum and maximum values will be used'''
                 #     print("The image does NOT have a standard range... \nNormalizing...")
                 #     plt.imshow(normIm(Im, 0, 255), cmap=cmap, vmin=0, vmax=255)
             elif Im.shape[-1] == 3: #If the image was RGB,
-                # print(f'vmin={Im.min()}, vmax={Im.max()}')
-                show = ax.imshow(Im, vmin=minv[idx], vmax=maxv[idx], 
+                # Note: For RGB images, vmin and vmax are always 0 and 1 respectively!
+                if 0 <= Im.min() and Im.max() <= 1:
+                    div = 1
+                elif 0 <= Im.min() and Im.max() <= 255:
+                    div = 255
+                show = ax.imshow(Im/div, vmin=minv[idx], vmax=maxv[idx], 
                                  aspect=aspect*square_Axes, 
                                  extent=[offset_min, offset_max, t_max, t_min],
                                  **kwargs)
